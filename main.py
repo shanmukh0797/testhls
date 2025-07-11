@@ -14,8 +14,8 @@ HLS_DIR = "hls"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(HLS_DIR, exist_ok=True)
 
-ffmpeg_path = "ffmpeg"
-ffprobe_path = "ffprobe"
+ffmpeg_path = "C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe"
+# ffprobe_path = "ffprobe"
 
 @app.post("/upload/")
 async def upload_video(file: UploadFile = File(...)):
@@ -89,22 +89,26 @@ async def upload_video(file: UploadFile = File(...)):
         "master_url": f"/hls/{video_id}/master.m3u8"
     }
 
+from fastapi import Request
+
 @app.get("/videos")
-def list_hls_videos():
+def list_hls_videos(request: Request):
     try:
         video_ids = [d for d in os.listdir(HLS_DIR) if os.path.isdir(os.path.join(HLS_DIR, d))]
         videos = []
+        base_url = str(request.url).replace(str(request.url.path), "")
+        
         for video_id in video_ids:
             master_path = os.path.join(HLS_DIR, video_id, "master.m3u8")
             if os.path.exists(master_path):
                 videos.append({
                     "video_id": video_id,
-                    "master_url": f"/hls/{video_id}/master.m3u8"
+                    "master_url": f"{base_url}/hls/{video_id}/master.m3u8"
                 })
         return JSONResponse(content=videos)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.get("/hls/{video_id}/{filename}")
 def serve_hls(video_id: str, filename: str):
     file_path = os.path.join(HLS_DIR, video_id, filename)
